@@ -39,6 +39,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class BigPipeResult extends StrutsResultSupport {
 
+    private final static int RECYCLE_ASK_SLEEP_TIME = 5;
+
     private PipesParse pipesParse = DefaultPipesParse.newInstance();
     private PipeFactory pipeFactory = DefaultPipeFactory.newInstance();
     private PipeExecutor syncPipeExecutor = SyncPipeExecutor.newInstance();
@@ -84,7 +86,7 @@ public class BigPipeResult extends StrutsResultSupport {
                         break;
                     }
                     //sleep. prevent ask too times
-                    Thread.sleep(5);
+                    Thread.sleep(RECYCLE_ASK_SLEEP_TIME);
                 }
             }
         }

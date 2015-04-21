@@ -1,7 +1,5 @@
 package org.le.core.executor;
 
-import org.le.Exception.FtlRenderException;
-import org.le.Exception.PipeFtlReadExcption;
 import org.le.bean.PipeProxy;
 import org.le.core.DefaultFreemarkerRenderer;
 import org.le.core.FreemarkerRenderer;
@@ -27,21 +25,36 @@ public class SyncPipeExecutor implements PipeExecutor {
 
     @Override
     public Object execute(PipeProxy pipe) {
-        pipe.execute();
-        Map<String, Object> context = InjectUtils.getFieldValueForFreemarker(pipe.getPipe());
-        String ftl = pipe.getFtl();
         try {
+            pipe.execute();
+            Map<String, Object> context = InjectUtils.getFieldValueForFreemarker(pipe.getPipe());
+            String ftl = pipe.getFtl();
             return renderer.render(ftl, context);
-        } catch (FtlRenderException e) {
-            throw new FtlRenderException("render [" + pipe.getFtlPath() + "] error!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return generateExceptionToPrintStack(e);
         }
     }
 
     @Override
-    public Map<String, Object> execute(List<PipeProxy> pipes){
+    public Map<String, Object> execute(List<PipeProxy> pipes) {
         Map<String, Object> result = new HashMap<String, Object>();
         for (PipeProxy pipe : pipes)
             result.put(pipe.getKey(), execute(pipe));
         return result;
+    }
+
+    private String generateExceptionToPrintStack(Exception e) {
+        StringBuilder result = new StringBuilder();
+        result.append("<div style='background-color: #eee;font-size:9px;font-family: " +
+                "Consolas,Menlo,Monaco;height:250px;overflow:scroll'>");
+        result.append("<font style='color:red'>")
+                .append(e.toString())
+                .append("</font></br>");
+        for (StackTraceElement element : e.getStackTrace()) {
+            result.append(element.toString() + "</br>");
+        }
+        result.append("</div>");
+        return result.toString();
     }
 }
