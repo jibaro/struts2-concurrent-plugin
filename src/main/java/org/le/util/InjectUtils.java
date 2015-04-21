@@ -1,7 +1,12 @@
 package org.le.util;
 
 import org.le.anno.Param;
+import org.le.bean.PipeSupport;
 
+import javax.servlet.ServletContext;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -33,10 +38,10 @@ public class InjectUtils {
         return extMap;
     }
 
-    public static Map<String,Object> getFieldValueForFreemarker(Object o){
+    public static Map<String,Object> getFieldValueForFreemarker(Object pipe){
         Map<String, Object> extMap = new HashMap<String, Object>();
-        extMap.putAll(getFieldValueWithAnnoParamFromObject(o));
-        extMap.putAll(getFieldValueWithGetterMethod(o));
+        extMap.putAll(getFieldValueWithAnnoParamFromObject(pipe));
+        extMap.putAll(getFieldValueWithGetterMethod(pipe));
         return extMap;
     }
 
@@ -49,8 +54,6 @@ public class InjectUtils {
             //becase has set field accessible so do not throw this exception
         }
     }
-
-
 
     private static boolean hasGetterMethod(Object o, Field field) {
         List<String> methods = getMethods(o);
