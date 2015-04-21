@@ -34,16 +34,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  * bigpipe mode will flush pagelet result to brower as soon as one pagelet renderd
  * choose mode just set annotation View at struts action.
  * For example @View(ftlPath = "/index.ftl", type = ExecuteType.BIGPIPE) in bigpipe mode. just choose ExecuteType
+ *
+ * @Author lepdou
  */
 public class BigPipeResult extends StrutsResultSupport {
 
-    private Object action;
     private PipesParse pipesParse = DefaultPipesParse.newInstance();
     private PipeFactory pipeFactory = DefaultPipeFactory.newInstance();
     private PipeExecutor syncPipeExecutor = SyncPipeExecutor.newInstance();
     private PipeExecutor concurrentPipeExecutor = new ConcurrentPipeExecutor();
     private PipeExecutor bigpipeExecutor = new BigPipeExecutor();
     private FreemarkerRenderer renderer = DefaultFreemarkerRenderer.newIntance();
+    private BigpipeSupportStrategy bigpipeSupportStrategy = SimpleBigpipeSupport.newInstance();
+
+    private Object action;
 
     @Override
     protected void doExecute(String finalLocation, ActionInvocation invocation) throws Exception {
@@ -66,25 +70,17 @@ public class BigPipeResult extends StrutsResultSupport {
                 break;
             case BIGPIPE: {
                 //first render html framework base action content
-                renderActionFramework(writer, executeResults, startTime);
+                renderPageFrameworkAndFlush(writer, executeResults, startTime);
                 //get pipes renderd result and flush
                 executeResults = bigpipeExecutor.execute(pipes);
                 List<String> flushedPipe = new ArrayList<String>();
                 AtomicInteger flushedCounter = new AtomicInteger(0);
                 while (true) {
                     if (executeResults.size() > flushedCounter.get()) {
-                        for (Map.Entry entry : executeResults.entrySet()) {
-                            if (!flushedPipe.contains(entry.getKey())) {
-                                flushedCounter.incrementAndGet();
-                                flushedPipe.add((String) entry.getKey());
-                                writer.println(entry.getValue());
-                                writer.flush();
-                            }
-                        }
+                        responsePipeToClient(executeResults, flushedPipe, flushedCounter, writer);
                     } else if (flushedCounter.get() == pipes.size()) {
                         //all pipes have flush to browse close the html
-                        writer.print("</body></html>");
-                        writer.flush();
+                         closeHtml(writer);
                         break;
                     }
                     //sleep. prevent ask too times
@@ -126,15 +122,31 @@ public class BigPipeResult extends StrutsResultSupport {
         writer.flush();
     }
 
-    private void renderActionFramework(PrintWriter writer, Map<String, Object> executeResults, long startTime) {
+    private void renderPageFrameworkAndFlush(PrintWriter writer, Map<String, Object> executeResults, long startTime) {
         //todo delete. just for test
         long endTime = new Date().getTime();
         executeResults.put("consumeTime", endTime - startTime);
         String ftl = ViewAnnotationUtils.generateFtl(action);
         String framework = renderer.render(ftl, executeResults).toString();
-        writer.println(framework);
+        writer.println(bigpipeSupportStrategy.execute(framework));
         writer.flush();
     }
 
+    private void responsePipeToClient(Map<String, Object> executeResults, List<String> flushedPipe,
+                                      AtomicInteger flushedCounter, PrintWriter writer){
+        for (Map.Entry entry : executeResults.entrySet()) {
+            if (!flushedPipe.contains(entry.getKey())) {
+                flushedCounter.incrementAndGet();
+                flushedPipe.add((String) entry.getKey());
+                writer.println(entry.getValue());
+                writer.flush();
+            }
+        }
+    }
+
+    private void closeHtml(PrintWriter writer){
+        writer.print("</body>\n</html>");
+        writer.flush();
+    }
 
 }
