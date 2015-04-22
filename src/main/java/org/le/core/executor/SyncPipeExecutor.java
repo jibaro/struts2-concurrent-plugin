@@ -29,7 +29,9 @@ public class SyncPipeExecutor implements PipeExecutor {
             pipe.execute();
             Map<String, Object> context = InjectUtils.getFieldValueForFreemarker(pipe.getPipe());
             String ftl = pipe.getFtl();
-            return renderer.render(ftl, context);
+            Object renderResult = renderer.render(ftl, context);
+            pipe.setRenderResult(renderResult);
+            return renderResult;
         } catch (Exception e) {
             e.printStackTrace();
             return generateExceptionToPrintStack(e);

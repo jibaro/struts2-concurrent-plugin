@@ -1,7 +1,9 @@
 package org.le.bean;
 
 
-import org.le.Exception.PipeFtlReadExcption;
+import org.le.Exception.PipeActionAnnotationException;
+import org.le.anno.View;
+import org.le.anno.Weight;
 import org.le.util.ViewAnnotationUtils;
 
 public class PipeProxy {
@@ -10,6 +12,8 @@ public class PipeProxy {
     private String ftlPath;
     private String ftl;
     private String key;
+    private Weight weight;
+    private Object renderResult;
 
     public PipeProxy(String pipeName, Pipe pipe) {
         this.pipeName = pipeName;
@@ -20,6 +24,17 @@ public class PipeProxy {
         if ("".equals(key)) {//default ftl name
             key = ftlPath.substring(ftlPath.lastIndexOf("/") + 1, ftlPath.indexOf("."));
         }
+        this.weight = getWight(pipe);
+
+    }
+
+    private Weight getWight(Pipe pipe) {
+        View view = pipe.getClass().getAnnotation(View.class);
+        if (view == null) {
+            throw new PipeActionAnnotationException("pipe components must " +
+                    "have View annotation:" + pipe.getClass().getName());
+        }
+        return view.weight();
     }
 
 
@@ -65,5 +80,21 @@ public class PipeProxy {
 
     public void setKey(String key) {
         this.key = key;
+    }
+
+    public Weight getWeight() {
+        return weight;
+    }
+
+    public void setWeight(Weight weight) {
+        this.weight = weight;
+    }
+
+    public Object getRenderResult() {
+        return renderResult;
+    }
+
+    public void setRenderResult(Object renderResult) {
+        this.renderResult = renderResult;
     }
 }

@@ -1,5 +1,6 @@
 package org.le.util;
 
+import org.le.Exception.PipeActionAnnotationException;
 import org.le.Exception.PipeFtlReadExcption;
 import org.le.anno.View;
 
@@ -12,11 +13,19 @@ public class ViewAnnotationUtils {
 
     public static String generateKey(Object o){
         View view = o.getClass().getAnnotation(View.class);
+        if(view == null){
+            throw new PipeActionAnnotationException("pipe components must " +
+                    "have View annotation:" + o.getClass().getName());
+        }
         String key = view.key();
         return key;
     }
     public static String generateFtlPath(Object o){
         View view = o.getClass().getAnnotation(View.class);
+        if(view == null){
+            throw new PipeActionAnnotationException("pipe components must " +
+                    "have View annotation:" + o.getClass().getName());
+        }
         String ftlPath = view.ftlPath();
         return ftlPath;
     }

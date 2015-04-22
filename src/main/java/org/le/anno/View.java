@@ -13,19 +13,28 @@ import java.lang.annotation.Target;
 public @interface View {
     /**
      * binding freemarker file
-     * @return  freemarker file's path
+     *
+     * @return freemarker file's path
      */
-    public String ftlPath();
+    String ftlPath();
 
     /**
      * pipe'key for reference in action's freemarker. default pipe's freemarker's filename
+     *
      * @return pipe'key
      */
-    public String key() default "";
+    String key() default "";
 
     /**
+     *
      * @see org.le.anno.ExecuteType
+     */
+    ExecuteType type() default ExecuteType.SYNC;
+
+    /**
+     * pipe display wight,at same level has no difference priority
      * @return
      */
-    public ExecuteType type() default ExecuteType.SYNC;
+    Weight weight() default Weight.NORMALL;
+
 }
