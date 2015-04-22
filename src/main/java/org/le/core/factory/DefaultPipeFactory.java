@@ -5,7 +5,6 @@ import com.opensymphony.xwork2.ActionInvocation;
 import org.apache.struts2.ServletActionContext;
 import org.le.Exception.PipeClassDefinationException;
 import org.le.Exception.PipeFieldInjectException;
-import org.le.Exception.PipeFtlReadExcption;
 import org.le.anno.Param;
 import org.le.bean.Pipe;
 import org.le.bean.PipeProxy;
@@ -13,6 +12,7 @@ import org.le.bean.PipeSupport;
 import org.le.core.Cache;
 import org.le.core.SimpleMemaryCache;
 import org.le.util.InjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
@@ -25,13 +25,13 @@ public class DefaultPipeFactory implements PipeFactory {
 
     private ActionInvocation invocation;
     private Cache cache = SimpleMemaryCache.newInstance();
+    private SpringBeanFactory springBeanFactory = SpringBeanFactory.newInstance();
 
     private DefaultPipeFactory() {
 
     }
 
     public static DefaultPipeFactory newInstance() {
-
         return instance;
     }
 
@@ -43,7 +43,7 @@ public class DefaultPipeFactory implements PipeFactory {
         Object pipe = null;
         Class pipeClazz = (Class) cache.get(className);
         try {
-            if(pipeClazz == null) {
+            if (pipeClazz == null) {
                 pipeClazz = Class.forName(className);
                 cache.add(className, pipeClazz);
             }
@@ -52,6 +52,7 @@ public class DefaultPipeFactory implements PipeFactory {
             throw new PipeClassDefinationException("create pipe failed,please check class name config right:" + className);
         }
         injectBusinessPipeField(pipe, context);
+        injectSpringBeanField(pipe);
         if (pipe != null && pipe instanceof PipeSupport)
             injectPipeSupportField(pipe);
         if (pipe != null && pipe instanceof Pipe)
@@ -101,14 +102,29 @@ public class DefaultPipeFactory implements PipeFactory {
                     field.set(pipeSupport, request);
                 } else if ("response".equals(fieldName)) {
                     field.set(pipeSupport, actionContext.get(ServletActionContext.HTTP_RESPONSE));
-                }else if("servletContext".equals(fieldName)){
+                } else if ("servletContext".equals(fieldName)) {
                     field.set(pipeSupport, actionContext.get(ServletActionContext.SERVLET_CONTEXT));
-                }else {
+                } else {
                     HttpServletRequest request = (HttpServletRequest) actionContext.get(ServletActionContext.HTTP_REQUEST);
                     field.set(pipeSupport, request.getCookies());
                 }
             }
         } catch (IllegalAccessException e) {
+        }
+    }
+
+    private void injectSpringBeanField(Object pipe) {
+        Field[] fields = pipe.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            if (field.getAnnotation(Autowired.class) != null) {
+                field.setAccessible(true);
+                String fieldName = field.getName();
+                try {
+                    field.set(pipe, springBeanFactory.getBean(fieldName));
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
