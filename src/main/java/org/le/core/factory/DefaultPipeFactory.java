@@ -10,6 +10,8 @@ import org.le.anno.Param;
 import org.le.bean.Pipe;
 import org.le.bean.PipeProxy;
 import org.le.bean.PipeSupport;
+import org.le.core.Cache;
+import org.le.core.SimpleMemaryCache;
 import org.le.util.InjectUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -22,12 +24,14 @@ public class DefaultPipeFactory implements PipeFactory {
     public static DefaultPipeFactory instance = new DefaultPipeFactory();
 
     private ActionInvocation invocation;
+    private Cache cache = SimpleMemaryCache.newInstance();
 
     private DefaultPipeFactory() {
 
     }
 
     public static DefaultPipeFactory newInstance() {
+
         return instance;
     }
 
@@ -37,9 +41,12 @@ public class DefaultPipeFactory implements PipeFactory {
         Map<String, Object> context = InjectUtils.getFieldValueWithAnnoParamFromObject(invocation.getAction());
         PipeProxy pipeProxy = null;
         Object pipe = null;
-        Class pipeClazz = null;
+        Class pipeClazz = (Class) cache.get(className);
         try {
-            pipeClazz = Class.forName(className);
+            if(pipeClazz == null) {
+                pipeClazz = Class.forName(className);
+                cache.add(className, pipeClazz);
+            }
             pipe = pipeClazz.newInstance();
         } catch (Exception e) {
             throw new PipeClassDefinationException("create pipe failed,please check class name config right:" + className);
