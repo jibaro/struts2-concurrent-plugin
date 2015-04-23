@@ -123,7 +123,6 @@ public class BigPipeResult extends StrutsResultSupport {
     }
 
     private void doResponse(PrintWriter writer, Map<String, Object> executeResults) {
-        long endTime = new Date().getTime();
         String result = renderer.render(ViewAnnotationUtils.generateFtl(action), executeResults).toString();
         writer.println(result);
         writer.flush();

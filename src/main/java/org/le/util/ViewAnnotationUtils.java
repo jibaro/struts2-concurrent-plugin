@@ -43,7 +43,7 @@ public class ViewAnnotationUtils {
         char[] buff = new char[1024];
         try {
             while ((len = reader.read(buff)) > 0) {
-                ftlBuilder.append(new String(buff, 0, len));
+                ftlBuilder.append(new String(new String(buff, 0, len).getBytes(),"utf-8"));
             }
         } catch (IOException e) {
             throw new PipeFtlReadExcption("can not read ftl file. please check file path[" + ftlPath

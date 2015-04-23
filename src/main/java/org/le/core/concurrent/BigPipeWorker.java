@@ -29,8 +29,8 @@ public class BigPipeWorker implements Runnable {
         sb.append("<script type=\"application/javascript\">")
                 .append("\nreplace(\"")
                 .append(pipeProxy.getKey())
-                .append("\",\"")
-                .append(result.toString().replace("\n","")).append("\");\n</script>");
+                .append("\",\'")
+                .append(result.toString().replace("\n","")).append("\');\n</script>");
         return sb.toString();
     }
 }

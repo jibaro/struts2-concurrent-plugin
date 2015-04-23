@@ -72,19 +72,14 @@ public class DefaultPipeFactory implements PipeFactory {
     private void injectBusinessPipeField(Object desc, Map<String, Object> context) {
         Field[] fields = desc.getClass().getDeclaredFields();
         for (Field field : fields) {
-            if (field.getAnnotation(Param.class) != null) {
+            if (field.getAnnotation(Param.class) != null && context.containsKey(field.getName())) {
                 String fieldName = field.getName();
                 Object injectValue = context.get(fieldName);
-                if (injectValue == null)
-                    throw new PipeFieldInjectException("please check [" + fieldName +
-                            "] exsited in action and has annotation param");
-                else {
-                    field.setAccessible(true);
-                    try {
-                        field.set(desc, context.get(fieldName));
-                    } catch (IllegalAccessException e) {
-                        //becase has set field accessible so do not throw this exception
-                    }
+                field.setAccessible(true);
+                try {
+                    field.set(desc, injectValue);
+                } catch (IllegalAccessException e) {
+                    //becase has set field accessible so do not throw this exception
                 }
             }
         }

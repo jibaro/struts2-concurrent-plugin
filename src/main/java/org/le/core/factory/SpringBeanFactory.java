@@ -7,7 +7,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 public class SpringBeanFactory {
     private static ApplicationContext applicationContext = WebApplicationContextUtils.
             getWebApplicationContext(ServletActionContext.getServletContext());
-    private static SpringBeanFactory instance;
+    private static SpringBeanFactory instance = new SpringBeanFactory();
     private SpringBeanFactory(){}
 
     public static SpringBeanFactory newInstance(){

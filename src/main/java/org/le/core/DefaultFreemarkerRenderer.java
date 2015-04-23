@@ -21,6 +21,10 @@ public class DefaultFreemarkerRenderer implements FreemarkerRenderer {
         StringTemplateLoader stringLoader = new StringTemplateLoader();
         cfg.setTemplateLoader(stringLoader);
         cfg.setObjectWrapper(ObjectWrapper.BEANS_WRAPPER);
+        cfg.setTemplateUpdateDelay(600000);
+        cfg.setNumberFormat("#");
+        cfg.setClassicCompatible(true);
+        cfg.setDefaultEncoding("UTF-8");
     }
 
     private DefaultFreemarkerRenderer() {
@@ -40,7 +44,7 @@ public class DefaultFreemarkerRenderer implements FreemarkerRenderer {
             template.process(context, writer);
             renderResult = writer.toString();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new FtlRenderException(e);
         } catch (TemplateException e) {
             throw new FtlRenderException(e);
         }
