@@ -13,6 +13,7 @@ import org.le.core.Cache;
 import org.le.core.SimpleMemaryCache;
 import org.le.util.InjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
@@ -112,10 +113,14 @@ public class DefaultPipeFactory implements PipeFactory {
         Field[] fields = pipe.getClass().getDeclaredFields();
         for (Field field : fields) {
             if (field.getAnnotation(Autowired.class) != null) {
+                String beanName = field.getName();
+                if(field.getAnnotation(Qualifier.class) != null){
+                    Qualifier qualifier = field.getAnnotation(Qualifier.class);
+                    beanName = qualifier.value();
+                }
                 field.setAccessible(true);
-                String fieldName = field.getName();
                 try {
-                    field.set(pipe, springBeanFactory.getBean(fieldName));
+                    field.set(pipe, springBeanFactory.getBean(beanName));
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
