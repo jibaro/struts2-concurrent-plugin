@@ -30,7 +30,7 @@ public class BigPipeWorker implements Runnable {
                 .append("\nreplace(\"")
                 .append(pipeProxy.getKey())
                 .append("\",\'")
-                .append(result.toString().replace("\n","")).append("\');\n</script>");
+                .append(result.toString().replaceAll("\n","")).append("\');\n</script>");
         return sb.toString();
     }
 }
