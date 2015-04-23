@@ -2,3 +2,4 @@
 1. support inject spring bean ===>> down 15.4.22
 2. 优化bigpipe js
 3. pipe优先级  ===>> down 15.4.22
+4. 字符编码(读取ftl源文件乱码)
