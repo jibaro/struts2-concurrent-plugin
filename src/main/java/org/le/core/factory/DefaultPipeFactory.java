@@ -25,7 +25,6 @@ public class DefaultPipeFactory implements PipeFactory {
     public static DefaultPipeFactory instance = new DefaultPipeFactory();
 
     private ActionInvocation invocation;
-    private Cache cache = SimpleMemaryCache.newInstance();
     private SpringBeanFactory springBeanFactory = SpringBeanFactory.newInstance();
 
     private DefaultPipeFactory() {
@@ -42,12 +41,9 @@ public class DefaultPipeFactory implements PipeFactory {
         Map<String, Object> context = InjectUtils.getFieldValueWithAnnoParamFromObject(invocation.getAction());
         PipeProxy pipeProxy = null;
         Object pipe = null;
-        Class pipeClazz = (Class) cache.get(className);
+        Class pipeClazz = null;
         try {
-            if (pipeClazz == null) {
-                pipeClazz = Class.forName(className);
-                cache.add(className, pipeClazz);
-            }
+            pipeClazz = Class.forName(className);
             pipe = pipeClazz.newInstance();
         } catch (Exception e) {
             throw new PipeClassDefinationException("create pipe failed,please check class name config right:" + className);
@@ -114,7 +110,7 @@ public class DefaultPipeFactory implements PipeFactory {
         for (Field field : fields) {
             if (field.getAnnotation(Autowired.class) != null) {
                 String beanName = field.getName();
-                if(field.getAnnotation(Qualifier.class) != null){
+                if (field.getAnnotation(Qualifier.class) != null) {
                     Qualifier qualifier = field.getAnnotation(Qualifier.class);
                     beanName = qualifier.value();
                 }

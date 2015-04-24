@@ -2,10 +2,13 @@ package org.le.view;
 
 import com.opensymphony.xwork2.ActionContext;
 import com.opensymphony.xwork2.ActionInvocation;
+import com.opensymphony.xwork2.inject.Inject;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.struts2.ServletActionContext;
 import org.apache.struts2.dispatcher.StrutsResultSupport;
 import org.le.Exception.FtlRenderException;
 import org.le.Exception.PipeActionAnnotationException;
+import org.le.Exception.PipeDowngradeInitException;
 import org.le.Exception.PipeFtlReadExcption;
 import org.le.anno.ExecuteType;
 import org.le.anno.View;
@@ -17,6 +20,7 @@ import org.le.core.*;
 import org.le.core.executor.BigPipeExecutor;
 import org.le.core.executor.ConcurrentPipeExecutor;
 import org.le.core.executor.SyncPipeExecutor;
+import org.le.core.extention.downgrade.PipeDowngradeBackup;
 import org.le.core.factory.DefaultPipeFactory;
 import org.le.core.factory.PipeFactory;
 import org.le.util.InjectUtils;
@@ -53,12 +57,16 @@ public class BigPipeResult extends StrutsResultSupport {
     private FreemarkerRenderer renderer = DefaultFreemarkerRenderer.newIntance();
     private BigpipeSupportStrategy bigpipeSupportStrategy = SimpleBigpipeSupport.newInstance();
 
+    @Inject(value = "struts.concurrent.plugin.downgrade")
+    private String downgrade;
+    private static boolean hasInitDowngrade = false;
     private Object action;
     private MultiBitSet pipesWeight;
     private Map<String, Weight> pipeKeyWeightMap;
 
     @Override
     protected void doExecute(String finalLocation, ActionInvocation invocation) throws Exception {
+        initDowngrade();
         this.action = invocation.getAction();
         List<String> pipeClazzs = pipesParse.getPipes(finalLocation);
         List<PipeProxy> pipes = pipeFactory.create(pipeClazzs, invocation);
@@ -92,6 +100,18 @@ public class BigPipeResult extends StrutsResultSupport {
 
                 //all pipes have flush to browse close the html
                 closeHtml(writer);
+            }
+        }
+    }
+
+    private void initDowngrade(){
+        if(!hasInitDowngrade && StringUtils.isNotEmpty(downgrade)){
+            try {
+                Class pipeDowngradeClass = Class.forName(downgrade);
+                PipeDowngradeBackup pipeDowngradeBackup = (PipeDowngradeBackup) pipeDowngradeClass.newInstance();
+                ((SyncPipeExecutor)syncPipeExecutor).setDowngradeBackup(pipeDowngradeBackup);
+            } catch (Exception e) {
+                throw new PipeDowngradeInitException("init pipe downgrade object error!");
             }
         }
     }

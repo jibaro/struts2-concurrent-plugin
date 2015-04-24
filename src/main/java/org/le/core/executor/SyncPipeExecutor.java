@@ -4,6 +4,7 @@ import org.le.bean.PipeProxy;
 import org.le.core.DefaultFreemarkerRenderer;
 import org.le.core.FreemarkerRenderer;
 import org.le.core.PipeExecutor;
+import org.le.core.extention.downgrade.PipeDowngradeBackup;
 import org.le.util.InjectUtils;
 
 import java.util.HashMap;
@@ -14,6 +15,7 @@ public class SyncPipeExecutor implements PipeExecutor {
 
     private static SyncPipeExecutor instance = new SyncPipeExecutor();
     private FreemarkerRenderer renderer = DefaultFreemarkerRenderer.newIntance();
+    private PipeDowngradeBackup downgradeBackup;
 
     private SyncPipeExecutor() {
     }
@@ -30,10 +32,16 @@ public class SyncPipeExecutor implements PipeExecutor {
             Map<String, Object> context = InjectUtils.getFieldValueForFreemarker(pipe.getPipe());
             String ftl = pipe.getFtl();
             Object renderResult = renderer.render(ftl, context);
+            if (downgradeBackup != null)
+                downgradeBackup.backup(pipe, renderResult);
             pipe.setRenderResult(renderResult);
             return renderResult;
         } catch (Exception e) {
-            e.printStackTrace();
+            if (downgradeBackup != null) {
+                Object backupResult = downgradeBackup.downgrade(pipe);
+                if (backupResult != null)
+                    return backupResult;
+            }
             return generateExceptionToPrintStack(e);
         }
     }
@@ -48,9 +56,9 @@ public class SyncPipeExecutor implements PipeExecutor {
 
     private String generateExceptionToPrintStack(Exception e) {
         StringBuilder result = new StringBuilder();
-        result.append("<div style='background-color: #eee;font-size:9px;font-family: " +
-                "Consolas,Menlo,Monaco;height:250px;overflow:scroll'>");
-        result.append("<font style='color:red'>")
+        result.append("<div style=\"background-color: #eee;font-size:9px;font-family: " +
+                "Consolas,Menlo,Monaco;height:250px;overflow:scroll\">");
+        result.append("<font style=\"color:red\">")
                 .append(e.toString())
                 .append("</font></br>");
         for (StackTraceElement element : e.getStackTrace()) {
@@ -58,5 +66,13 @@ public class SyncPipeExecutor implements PipeExecutor {
         }
         result.append("</div>");
         return result.toString();
+    }
+
+    public PipeDowngradeBackup getDowngradeBackup() {
+        return downgradeBackup;
+    }
+
+    public void setDowngradeBackup(PipeDowngradeBackup downgradeBackup) {
+        this.downgradeBackup = downgradeBackup;
     }
 }
