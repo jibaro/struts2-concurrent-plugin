@@ -1,4 +1,4 @@
-## struts2-bigpipe-plugin
+## struts2-concurrent-plugin
 ### 简介
 <hr>
    struts2-bigpipe-plugin是struts2的一款插件，插件功能是把一个页面分成很多个模块。每个模块执行业务代码并渲染有三种模式:
