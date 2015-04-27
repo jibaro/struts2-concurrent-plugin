@@ -6,21 +6,18 @@ import com.opensymphony.xwork2.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.struts2.ServletActionContext;
 import org.apache.struts2.dispatcher.StrutsResultSupport;
-import org.le.Exception.FtlRenderException;
 import org.le.Exception.PipeActionAnnotationException;
 import org.le.Exception.PipeDowngradeInitException;
-import org.le.Exception.PipeFtlReadExcption;
 import org.le.anno.ExecuteType;
 import org.le.anno.View;
 import org.le.anno.Weight;
-import org.le.bean.Pipe;
 import org.le.bean.PipeProxy;
 import org.le.common.MultiBitSet;
 import org.le.core.*;
 import org.le.core.executor.BigPipeExecutor;
 import org.le.core.executor.ConcurrentPipeExecutor;
 import org.le.core.executor.SyncPipeExecutor;
-import org.le.core.extention.downgrade.PipeDowngradeBackup;
+import org.le.core.extention.downgrade.PipeDowngrade;
 import org.le.core.factory.DefaultPipeFactory;
 import org.le.core.factory.PipeFactory;
 import org.le.util.InjectUtils;
@@ -30,7 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * bigpipe result for struts2
@@ -59,6 +55,8 @@ public class BigPipeResult extends StrutsResultSupport {
 
     @Inject(value = "struts.concurrent.plugin.downgrade")
     private String downgrade;
+    @Inject(value = "struts.devMode")
+    private String devMode;
     private static boolean hasInitDowngrade = false;
     private Object action;
     private MultiBitSet pipesWeight;
@@ -67,6 +65,7 @@ public class BigPipeResult extends StrutsResultSupport {
     @Override
     protected void doExecute(String finalLocation, ActionInvocation invocation) throws Exception {
         initDowngrade();
+        initDevMode();
         this.action = invocation.getAction();
         List<String> pipeClazzs = pipesParse.getPipes(finalLocation);
         List<PipeProxy> pipes = pipeFactory.create(pipeClazzs, invocation);
@@ -90,7 +89,7 @@ public class BigPipeResult extends StrutsResultSupport {
                 statisticPipeWight(pipes);
                 geneatePipeKeyWeightMap(pipes);
                 int flushedCount = 0;
-                while (flushedCount != pipes.size()){
+                while (flushedCount != pipes.size()) {
                     if (!executeResults.isEmpty()) {
                         flushedCount += responsePipeToClient(executeResults, writer);
                     }
@@ -104,18 +103,24 @@ public class BigPipeResult extends StrutsResultSupport {
         }
     }
 
-    private void initDowngrade(){
-        if(!hasInitDowngrade && StringUtils.isNotEmpty(downgrade)){
+    private void initDowngrade() {
+        if (!hasInitDowngrade && StringUtils.isNotEmpty(downgrade)) {
             try {
                 Class pipeDowngradeClass = Class.forName(downgrade);
-                PipeDowngradeBackup pipeDowngradeBackup = (PipeDowngradeBackup) pipeDowngradeClass.newInstance();
-                ((SyncPipeExecutor)syncPipeExecutor).setDowngradeBackup(pipeDowngradeBackup);
+                PipeDowngrade pipeDowngradeBackup = (PipeDowngrade) pipeDowngradeClass.newInstance();
+                ((SyncPipeExecutor) syncPipeExecutor).setDowngrade(pipeDowngradeBackup);
             } catch (Exception e) {
                 throw new PipeDowngradeInitException("init pipe downgrade object error!");
             }
         }
     }
 
+    private void initDevMode() {
+        boolean devMod = false;
+        if (StringUtils.isNotEmpty(devMode) && "true".equals(devMode))
+            devMod = true;
+        ((SyncPipeExecutor) syncPipeExecutor).setDevMode(devMod);
+    }
 
     private Map<String, Object> buildFrameworkExecuteContext(List<PipeProxy> pipes) {
         Map<String, Object> actionContext = new HashMap<String, Object>();
@@ -189,25 +194,25 @@ public class BigPipeResult extends StrutsResultSupport {
             Object value = entry.getValue();
             switch (pipeKeyWeightMap.get(key)) {
                 case HEIGHT: {
-                    flushAndRemove(executeResults,writer,key, value);
-                    hSize --;
-                    flushedCount ++;
+                    flushAndRemove(executeResults, writer, key, value);
+                    hSize--;
+                    flushedCount++;
                     pipesWeight.set(0, hSize);
                     break;
                 }
                 case NORMALL: {
-                    if(hSize == 0){
+                    if (hSize == 0) {
                         flushAndRemove(executeResults, writer, key, value);
-                        flushedCount ++;
-                        nSize --;
+                        flushedCount++;
+                        nSize--;
                         pipesWeight.set(1, nSize);
                     }
                     break;
                 }
-                case LOW:{
-                    if(hSize == 0 && nSize == 0){
+                case LOW: {
+                    if (hSize == 0 && nSize == 0) {
                         flushAndRemove(executeResults, writer, key, value);
-                        flushedCount ++;
+                        flushedCount++;
                     }
                 }
             }
@@ -215,7 +220,7 @@ public class BigPipeResult extends StrutsResultSupport {
         return flushedCount;
     }
 
-    private void flushAndRemove(Map<String, Object> executeResults, PrintWriter writer, String key, Object value){
+    private void flushAndRemove(Map<String, Object> executeResults, PrintWriter writer, String key, Object value) {
         flush(writer, value);
         executeResults.remove(key);
     }

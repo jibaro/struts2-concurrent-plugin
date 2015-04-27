@@ -2,7 +2,7 @@ package org.le.core.extention.downgrade;
 
 import org.le.bean.PipeProxy;
 
-public interface PipeDowngradeBackup {
+public interface PipeDowngrade {
 
     void backup(PipeProxy pipe, Object pipeResult);
 

@@ -4,7 +4,7 @@ import org.le.bean.PipeProxy;
 import org.le.core.DefaultFreemarkerRenderer;
 import org.le.core.FreemarkerRenderer;
 import org.le.core.PipeExecutor;
-import org.le.core.extention.downgrade.PipeDowngradeBackup;
+import org.le.core.extention.downgrade.PipeDowngrade;
 import org.le.util.InjectUtils;
 
 import java.util.HashMap;
@@ -15,7 +15,8 @@ public class SyncPipeExecutor implements PipeExecutor {
 
     private static SyncPipeExecutor instance = new SyncPipeExecutor();
     private FreemarkerRenderer renderer = DefaultFreemarkerRenderer.newIntance();
-    private PipeDowngradeBackup downgradeBackup;
+    private PipeDowngrade downgrade;
+    private boolean devMode;
 
     private SyncPipeExecutor() {
     }
@@ -32,18 +33,24 @@ public class SyncPipeExecutor implements PipeExecutor {
             Map<String, Object> context = InjectUtils.getFieldValueForFreemarker(pipe.getPipe());
             String ftl = pipe.getFtl();
             Object renderResult = renderer.render(ftl, context);
-            if (downgradeBackup != null)
-                downgradeBackup.backup(pipe, renderResult);
+            if (downgrade != null)
+                downgrade.backup(pipe, renderResult);
             pipe.setRenderResult(renderResult);
             return renderResult;
         } catch (Exception e) {
-            if (downgradeBackup != null) {
-                Object backupResult = downgradeBackup.downgrade(pipe);
-                if (backupResult != null)
-                    return backupResult;
+            if(isDevMode()){
+                return generateExceptionToPrintStack(e);
+            }else{
+                if (downgrade != null) {
+                    Object backupResult = downgrade.downgrade(pipe);
+                    if (backupResult != null)
+                        return backupResult;
+                }else {
+                    return "";
+                }
             }
-            return generateExceptionToPrintStack(e);
         }
+        return "";
     }
 
     @Override
@@ -68,11 +75,19 @@ public class SyncPipeExecutor implements PipeExecutor {
         return result.toString();
     }
 
-    public PipeDowngradeBackup getDowngradeBackup() {
-        return downgradeBackup;
+    public PipeDowngrade getDowngrade() {
+        return downgrade;
     }
 
-    public void setDowngradeBackup(PipeDowngradeBackup downgradeBackup) {
-        this.downgradeBackup = downgradeBackup;
+    public void setDowngrade(PipeDowngrade downgrade) {
+        this.downgrade = downgrade;
+    }
+
+    public boolean isDevMode() {
+        return devMode;
+    }
+
+    public void setDevMode(boolean devMode) {
+        this.devMode = devMode;
     }
 }
