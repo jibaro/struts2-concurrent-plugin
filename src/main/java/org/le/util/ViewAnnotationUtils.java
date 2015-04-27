@@ -3,13 +3,17 @@ package org.le.util;
 import org.le.Exception.PipeActionAnnotationException;
 import org.le.Exception.PipeFtlReadExcption;
 import org.le.anno.View;
+import org.le.core.Cache;
+import org.le.core.SimpleMemaryCache;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Map;
 
 public class ViewAnnotationUtils {
+    private static final Cache ftlCache = SimpleMemaryCache.newInstance();
 
     public static String generateKey(Object o){
         View view = o.getClass().getAnnotation(View.class);
@@ -32,6 +36,9 @@ public class ViewAnnotationUtils {
 
     public static String generateFtl(Object o) {
         String ftlPath = generateFtlPath(o);
+        String ftl = (String) ftlCache.get(ftlPath);
+        if(ftl != null)
+            return ftl;
         InputStream inputStream = ViewAnnotationUtils.class.getClassLoader().getResourceAsStream(ftlPath);
         if (inputStream == null) {
             throw new PipeFtlReadExcption("can not read ftl file. please check file path[" + ftlPath
@@ -58,6 +65,8 @@ public class ViewAnnotationUtils {
                 e.printStackTrace();
             }
         }
-        return ftlBuilder.toString();
+        ftl = ftlBuilder.toString();
+        ftlCache.add(ftlPath, ftl);
+        return ftl;
     }
 }
