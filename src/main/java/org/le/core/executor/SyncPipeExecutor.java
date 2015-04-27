@@ -45,12 +45,13 @@ public class SyncPipeExecutor implements PipeExecutor {
                     Object backupResult = downgrade.downgrade(pipe);
                     if (backupResult != null)
                         return backupResult;
+                    else
+                        return "";
                 }else {
                     return "";
                 }
             }
         }
-        return "";
     }
 
     @Override
