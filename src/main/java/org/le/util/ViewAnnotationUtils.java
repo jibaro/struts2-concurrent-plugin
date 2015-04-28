@@ -6,10 +6,7 @@ import org.le.anno.View;
 import org.le.core.Cache;
 import org.le.core.SimpleMemaryCache;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.Map;
 
 public class ViewAnnotationUtils {
@@ -44,13 +41,18 @@ public class ViewAnnotationUtils {
             throw new PipeFtlReadExcption("can not read ftl file. please check file path[" + ftlPath
                     + "] ftl file must in resources directory");
         }
-        Reader reader = new InputStreamReader(inputStream);
+        Reader reader = null;
+        try {
+            reader = new InputStreamReader(inputStream, "utf-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         StringBuilder ftlBuilder = new StringBuilder();
         int len = -1;
         char[] buff = new char[1024];
         try {
             while ((len = reader.read(buff)) > 0) {
-                ftlBuilder.append(new String(new String(buff, 0, len).getBytes(),"utf-8"));
+                ftlBuilder.append(new String(buff, 0 , len));
             }
         } catch (IOException e) {
             throw new PipeFtlReadExcption("can not read ftl file. please check file path[" + ftlPath
